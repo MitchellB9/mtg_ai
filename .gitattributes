@@ -61,3 +61,8 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Python files: enforce UTF-8 encoding and LF line endings
+###############################################################################
+*.py text eol=lf working-tree-encoding=UTF-8
