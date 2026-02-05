@@ -1,0 +1,82 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>558364a9-1b28-4b60-b524-ba561ef211f8</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>src\pipelines\build_dataset.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>mtg_ai</Name>
+    <RootNamespace>mtg_ai</RootNamespace>
+    <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
+    <InterpreterId>MSBuild|.venv|$(MSBuildProjectFullPath)</InterpreterId>
+    <IsWindowsApplication>False</IsWindowsApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="mtg_ai.py" />
+    <Compile Include="src\config\settings.py" />
+    <Compile Include="src\config\__init__.py" />
+    <Compile Include="src\data_ingestion\scryfall_bulk.py" />
+    <Compile Include="src\data_ingestion\__init__.py" />
+    <Compile Include="src\pipelines\build_dataset.py" />
+    <Compile Include="src\pipelines\__init__.py" />
+    <Compile Include="src\preprocessing\__init__.py" />
+    <Compile Include="src\utils\io.py" />
+    <Compile Include="src\utils\__init__.py" />
+    <Compile Include="src\__init__.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Artifacts\" />
+    <Folder Include="Artifacts\Encoders\" />
+    <Folder Include="Artifacts\Models\" />
+    <Folder Include="Artifacts\Vectorizers\" />
+    <Folder Include="Data\" />
+    <Folder Include="Data\External\" />
+    <Folder Include="Data\Processed\" />
+    <Folder Include="Data\Raw\" />
+    <Folder Include="Notebooks\" />
+    <Folder Include="src\" />
+    <Folder Include="src\config\" />
+    <Folder Include="src\data_ingestion\" />
+    <Folder Include="src\pipelines\" />
+    <Folder Include="src\preprocessing\" />
+    <Folder Include="src\utils\" />
+    <Folder Include="tests\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".gitignore" />
+    <Content Include="README.md" />
+    <Content Include="requirements.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include=".venv\">
+      <Id>.venv</Id>
+      <Version>3.10</Version>
+      <Description>.venv (Python 3.10 (64-bit))</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>

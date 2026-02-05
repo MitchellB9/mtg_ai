@@ -1,0 +1,33 @@
+# Virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local environment variables
+.env
+
+# VS/VS Code
+.vs/
+.vscode/
+
+# Logs
+*.log
+
+# Data / exports (adjust to your project)
+data/
+datasets/
+exports/
+models/
+*.pkl
+*.parquet
+*.csv
+*.jsonl
+
+# OS
+.DS_Store
