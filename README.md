@@ -9,3 +9,4 @@
 TODO:
 - have build_dataset.py replace old (Raw) dataset
 - ensure self-referential text (this__card) also accounts for partial name (Frodo, Sauron's Bane = Frodo)
+- expand MULTIWORD_PHRASES in oracle_tokenizer.py_
