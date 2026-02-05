@@ -39,6 +39,8 @@
     <Compile Include="src\utils\io.py" />
     <Compile Include="src\utils\__init__.py" />
     <Compile Include="src\__init__.py" />
+    <Compile Include="tests\test_tokenizer.py" />
+    <Compile Include="tests\test_type_parser.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Artifacts\" />
