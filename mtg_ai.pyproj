@@ -29,6 +29,8 @@
     <Compile Include="src\config\__init__.py" />
     <Compile Include="src\data_ingestion\scryfall_bulk.py" />
     <Compile Include="src\data_ingestion\__init__.py" />
+    <Compile Include="src\features\__init__.py" />
+    <Compile Include="src\models\__init__.py" />
     <Compile Include="src\pipelines\build_dataset.py" />
     <Compile Include="src\pipelines\preprocess_text.py" />
     <Compile Include="src\pipelines\__init__.py" />
@@ -55,6 +57,8 @@
     <Folder Include="src\" />
     <Folder Include="src\config\" />
     <Folder Include="src\data_ingestion\" />
+    <Folder Include="src\features\" />
+    <Folder Include="src\models\" />
     <Folder Include="src\pipelines\" />
     <Folder Include="src\preprocessing\" />
     <Folder Include="src\utils\" />

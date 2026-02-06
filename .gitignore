@@ -23,7 +23,9 @@ __pycache__/
 data/
 datasets/
 exports/
-models/
+artifacts/models/
+artifacts/vectorizers/
+artifacts/encoders/
 *.pkl
 *.parquet
 *.csv
