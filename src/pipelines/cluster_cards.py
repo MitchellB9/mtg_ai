@@ -38,10 +38,12 @@ def main() -> None:
     joblib.dump(km, model_dir / "kmeans.joblib", compress=3)
 
     # Save label mapping
-    out_df = pd.DataFrame({
-        "id": row_ids,
-        "cluster": labels,
-    })
+    out_df = pd.DataFrame(
+        {
+            "id": row_ids,
+            "cluster": labels,
+        }
+    )
     out_path = paths.data_processed / "oracle_clusters.parquet"
     out_df.to_parquet(out_path, index=False)
 
