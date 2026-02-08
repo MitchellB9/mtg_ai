@@ -31,6 +31,7 @@
     <Compile Include="src\data_ingestion\__init__.py" />
     <Compile Include="src\features\embedding_features.py" />
     <Compile Include="src\features\__init__.py" />
+    <Compile Include="src\models\clustering.py" />
     <Compile Include="src\models\similarity.py" />
     <Compile Include="src\models\__init__.py" />
     <Compile Include="src\pipelines\build_dataset.py" />
