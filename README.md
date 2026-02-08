@@ -11,3 +11,12 @@ TODO:
 - ensure self-referential text (this__card) also accounts for partial name (Frodo, Sauron's Bane = Frodo)
 - expand MULTIWORD_PHRASES in oracle_tokenizer.py_
 - unignore src/models/__init__.py (conflict with Artifacts/Models?)
+
+
+Command Sequence:
+
+python -m src.pipelines.build_dataset
+python -m src.pipelines.preprocess_text
+python -m src.pipelines.build_vectors
+python -m src.pipelines.cluster_cards
+python -m src.pipelines.find_similar
