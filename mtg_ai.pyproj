@@ -38,6 +38,8 @@
     <Compile Include="src\pipelines\build_vectors.py" />
     <Compile Include="src\pipelines\cluster_cards.py" />
     <Compile Include="src\pipelines\find_similar.py" />
+    <Compile Include="src\pipelines\inspect_data.py" />
+    <Compile Include="src\pipelines\plot_clusters_2d.py" />
     <Compile Include="src\pipelines\preprocess_text.py" />
     <Compile Include="src\pipelines\__init__.py" />
     <Compile Include="src\preprocessing\oracle_tokenizer.py" />

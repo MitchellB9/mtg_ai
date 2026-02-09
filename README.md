@@ -11,6 +11,9 @@ TODO:
 - ensure self-referential text (this__card) also accounts for partial name (Frodo, Sauron's Bane = Frodo)
 - expand MULTIWORD_PHRASES in oracle_tokenizer.py_
 - unignore src/models/__init__.py (conflict with Artifacts/Models?)
+- create sub-datasets to utilize all data from bulk
+- move reminder text to its own column
+- add vizualizations
 
 
 Command Sequence:

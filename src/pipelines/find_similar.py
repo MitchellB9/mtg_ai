@@ -1,4 +1,4 @@
-from __future__ import annotations
+ï»¿from __future__ import annotations
 
 import pandas as pd
 
@@ -25,9 +25,9 @@ def main() -> None:
     nn = fit_nn_index(X, metric="cosine")
     res = query_neighbors(nn, X, query_index=qi, k=k, include_self=False)
 
-    print(f"\nQuery: {df.loc[qi, 'name']} — {df.loc[qi, 'type_line']}\n")
+    print(f"\nQuery: {df.loc[qi, 'name']} â€” {df.loc[qi, 'type_line']}\n")
     for idx, score in zip(res.neighbor_indices, res.neighbor_scores):
-        print(f"{score:0.3f} | {df.loc[idx, 'name']} — {df.loc[idx, 'type_line']}")
+        print(f"{score:0.3f} | {df.loc[idx, 'name']} â€” {df.loc[idx, 'type_line']}")
 
 
 if __name__ == "__main__":
