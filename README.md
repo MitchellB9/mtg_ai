@@ -14,7 +14,7 @@ TODO:
 - create sub-datasets to utilize all data from bulk
 - move reminder text to its own column
 - add vizualizations
-
+- remove vanguard and other non core cards from dataset (or at least mark them as such)
 
 Command Sequence:
 
