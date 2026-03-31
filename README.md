@@ -12,9 +12,17 @@ TODO:
 - expand MULTIWORD_PHRASES in oracle_tokenizer.py_
 - unignore src/models/__init__.py (conflict with Artifacts/Models?)
 - create sub-datasets to utilize all data from bulk
+	- cards_main (One row per unique card, Only gameplay-relevant + commonly used fields)
+	- card_prints (One row per printing)
+	- card_text_tokens (cleaned oracle text)
+	- card_features (Derived / ML-ready features)
+	- card_ids (All ID relationships)
+	- cards_misc (cols w/ mostly null values, inconsistent structure, niche use cases)
+	- non_card_entities (tokens, vanguard, art_series,emblems, planar, scheme)
 - move reminder text to its own column
 - add vizualizations
-- remove vanguard and other non core cards from dataset (or at least mark them as such)
+- remove non-cards from dataset (tokens, vanguard, art_series,emblems, planar, scheme)
+- 
 
 Command Sequence:
 
