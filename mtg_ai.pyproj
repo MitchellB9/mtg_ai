@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>558364a9-1b28-4b60-b524-ba561ef211f8</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>src\pipelines\build_dataset.py</StartupFile>
+    <StartupFile>src\pipelines\report_clusters.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

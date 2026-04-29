@@ -100,6 +100,7 @@ def main() -> None:
             types[["id", "basic_types", "super_types", "sub_types"]],
             on="id",
             how="left",
+            suffixes=("", "_type_features")
         )
         .merge(clusters, on="id", how="left")
     )
@@ -191,6 +192,8 @@ def main() -> None:
 
     print(f"Saved: {report_out}")
     print(f"Saved: {reps_out}")
+
+    # TODO: Don't like this output here. Save for notebook
     print("\nTop 10 clusters by size:\n")
     print(report_df[["cluster", "cluster_size", "avg_cmc", "top_basic_types", "top_terms"]].head(10).to_string(index=False))
 
