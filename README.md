@@ -1,7 +1,7 @@
 # MTG AI Project
 
 ## Quickstart
-1. Create venv
+1. activate venv .\.venv\Scripts\Activate.ps1
 2. Install requirements
 3. Run pipeline:
 
