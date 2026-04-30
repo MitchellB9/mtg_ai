@@ -48,6 +48,7 @@
     <Compile Include="src\pipelines\report_clusters.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\pipelines\run.py" />
     <Compile Include="src\pipelines\__init__.py" />
     <Compile Include="src\preprocessing\oracle_tokenizer.py" />
     <Compile Include="src\preprocessing\text_normalization.py" />
