@@ -32,6 +32,9 @@
     <Compile Include="src\data_ingestion\__init__.py" />
     <Compile Include="src\features\embedding_features.py" />
     <Compile Include="src\features\__init__.py" />
+    <Compile Include="src\labeling\label_taxonomy.py" />
+    <Compile Include="src\labeling\rule_labeler.py" />
+    <Compile Include="src\labeling\__init__.py" />
     <Compile Include="src\models\clustering.py" />
     <Compile Include="src\models\similarity.py" />
     <Compile Include="src\models\__init__.py" />
@@ -39,6 +42,7 @@
     <Compile Include="src\pipelines\build_vectors.py" />
     <Compile Include="src\pipelines\cluster_cards.py" />
     <Compile Include="src\pipelines\find_similar.py" />
+    <Compile Include="src\pipelines\label_cards.py" />
     <Compile Include="src\pipelines\plot_clusters_2d.py" />
     <Compile Include="src\pipelines\preprocess_text.py" />
     <Compile Include="src\pipelines\report_clusters.py">
@@ -70,6 +74,7 @@
     <Folder Include="src\data_ingestion\" />
     <Folder Include="src\features\" />
     <Folder Include="src\models\" />
+    <Folder Include="src\labeling\" />
     <Folder Include="src\pipelines\" />
     <Folder Include="src\preprocessing\" />
     <Folder Include="src\utils\" />
