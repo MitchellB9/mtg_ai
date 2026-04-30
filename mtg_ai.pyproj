@@ -70,6 +70,7 @@
     <Folder Include="Data\Processed\" />
     <Folder Include="Data\Raw\" />
     <Folder Include="Notebooks\" />
+    <Folder Include="Notebooks\inspect_data\" />
     <Folder Include="src\" />
     <Folder Include="src\config\" />
     <Folder Include="src\data_ingestion\" />
