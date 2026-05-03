@@ -55,6 +55,7 @@
     <Compile Include="src\preprocessing\type_parser.py" />
     <Compile Include="src\preprocessing\__init__.py" />
     <Compile Include="src\utils\io.py" />
+    <Compile Include="src\utils\reports.py" />
     <Compile Include="src\utils\__init__.py" />
     <Compile Include="src\__init__.py" />
     <Compile Include="tests\test_tokenizer.py" />
@@ -77,6 +78,7 @@
     <Folder Include="src\features\" />
     <Folder Include="src\models\" />
     <Folder Include="src\labeling\" />
+    <Folder Include="src\data_processing\" />
     <Folder Include="src\pipelines\" />
     <Folder Include="src\preprocessing\" />
     <Folder Include="src\utils\" />
