@@ -51,25 +51,39 @@ def download_file(url: str, dest_path: Path) -> None:
                         pbar.update(len(chunk))
 
 
-def fetch_latest_scryfall_bulk() -> Path:
+def fetch_latest_scryfall_bulk(bulk_type: str | None = None) -> Path:
     """
-    Downloads the latest Scryfall bulk file (default oracle_cards) into data/raw/
+    Downloads the latest Scryfall bulk file into data/raw/
     and writes a metadata json alongside it.
+
+    Keeps only the most recent file for the given bulk_type.
     """
-    info = get_bulk_info(settings.scryfall_bulk_type)
+    selected_bulk_type = bulk_type or settings.scryfall_bulk_type
+    info = get_bulk_info(selected_bulk_type)
 
     raw_dir = paths.data_raw
     ensure_dir(raw_dir)
 
-    # Use updated_at to make a stable filename, but keep it simple
     safe_stamp = info.updated_at.replace(":", "").replace("-", "")
     out_json = raw_dir / f"{info.bulk_type}_{safe_stamp}.json"
     meta_path = raw_dir / f"{info.bulk_type}_{safe_stamp}.meta.json"
 
+    # If latest already exists, return it
     if out_json.exists() and not settings.always_redownload_bulk:
         return out_json
 
+    # 🔹 Delete older versions of this bulk type
+    for file in raw_dir.glob(f"{info.bulk_type}_*.json"):
+        if file != out_json:
+            file.unlink(missing_ok=True)
+
+    for file in raw_dir.glob(f"{info.bulk_type}_*.meta.json"):
+        if file != meta_path:
+            file.unlink(missing_ok=True)
+
+    # Download new file
     download_file(info.download_uri, out_json)
+
     write_json(
         meta_path,
         {
@@ -80,4 +94,5 @@ def fetch_latest_scryfall_bulk() -> Path:
             "saved_as": out_json.name,
         },
     )
+
     return out_json
