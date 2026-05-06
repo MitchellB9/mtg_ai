@@ -39,7 +39,6 @@
     <Compile Include="src\models\clustering.py" />
     <Compile Include="src\models\similarity.py" />
     <Compile Include="src\models\__init__.py" />
-    <Compile Include="src\pipelines\build_dataset.py" />
     <Compile Include="src\pipelines\build_vectors.py" />
     <Compile Include="src\pipelines\cluster_cards.py" />
     <Compile Include="src\pipelines\find_similar.py" />
