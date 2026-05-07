@@ -67,6 +67,7 @@
     <Folder Include="Artifacts\Models\" />
     <Folder Include="Artifacts\Vectorizers\" />
     <Folder Include="Data\" />
+    <Folder Include="Data\base\" />
     <Folder Include="Data\External\" />
     <Folder Include="Data\Processed\" />
     <Folder Include="Data\Raw\" />
@@ -87,6 +88,12 @@
   <ItemGroup>
     <Content Include=".editorconfig" />
     <Content Include=".gitignore" />
+    <Content Include="Data\base\base_parquets_report.json" />
+    <Content Include="Data\base\every_printing.parquet" />
+    <Content Include="Data\base\game_features.parquet" />
+    <Content Include="Data\base\links_and_ids.parquet" />
+    <Content Include="Data\base\misc.parquet" />
+    <Content Include="Data\base\non_main_game_pieces.parquet" />
     <Content Include="README.md" />
     <Content Include="requirements.txt" />
   </ItemGroup>

@@ -8,7 +8,7 @@ from src.config.settings import paths
 
 
 PIPELINE_STEPS = [
-    ("Build core dataset", "src.pipelines.build_dataset"),
+    ("Build core dataset", "src.data_processing.build_base_parquets"),
     ("Preprocess text and types", "src.pipelines.preprocess_text"),
     ("Build TF-IDF vectors", "src.pipelines.build_vectors"),
     ("Cluster cards", "src.pipelines.cluster_cards"),
