@@ -47,7 +47,7 @@ def main() -> None:
             sparse TF-IDF matrix
             card id index
     """
-    ensure_dir(paths.artifacts_vectorizers)
+    ensure_dir(OUTPUT_DIR)
 
     if not INPUT_PATH.exists():
         raise FileNotFoundError(
@@ -62,14 +62,22 @@ def main() -> None:
     texts = df["oracle_text_norm"].fillna("")
     ids = df["id"].to_numpy()
 
-    cfg = TfidfConfig(
-        min_df=3,
-        max_df=0.90,
+    cfg = v(
+        min_df=2,
+        max_df=0.97,
         ngram_range=(1, 2),
-        max_features=250_000,
+        max_features=100_000,
         sublinear_tf=True,
         lowercase=True,
     )
+
+    print("TF-IDF config:")
+    print(f"  min_df={cfg.min_df}")
+    print(f"  max_df={cfg.max_df}")
+    print(f"  ngram_range={cfg.ngram_range}")
+    print(f"  max_features={cfg.max_features}")
+    print(f"  sublinear_tf={cfg.sublinear_tf}")
+    print(f"  lowercase={cfg.lowercase}")
 
     vectorizer, matrix = fit_transform_tfidf(texts, cfg)
 
