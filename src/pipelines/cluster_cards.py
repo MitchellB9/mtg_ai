@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 import joblib
 import pandas as pd
 
@@ -10,17 +9,93 @@ from src.features.embedding_features import load_tfidf_artifacts
 from src.models.clustering import cluster_with_svd_kmeans, ClusterConfig
 
 
+VECTOR_DIR = paths.artifacts_vectorizers / "tfidf_oracle_v1"
+MODEL_DIR = paths.artifacts_models / "svd_kmeans_tfidf_v1"
+CLUSTERS_OUT = paths.data_processed / "oracle_clusters.parquet"
+
+
+def validate_vector_artifacts(matrix, row_ids) -> None:
+    """
+    Input:
+        TF-IDF matrix and row id array.
+
+    Logic:
+        Confirms the vector matrix and row ids align before clustering.
+
+    Output:
+        Raises ValueError if artifact shapes are inconsistent.
+    """
+    if matrix.shape[0] != len(row_ids):
+        raise ValueError(
+            f"Vector row mismatch: matrix rows={matrix.shape[0]}, ids={len(row_ids)}"
+        )
+
+    if matrix.shape[0] == 0:
+        raise ValueError("Cannot cluster an empty vector matrix.")
+
+
+def build_cluster_labels(row_ids, labels) -> pd.DataFrame:
+    """
+    Input:
+        Card ids from the vector artifact and cluster labels from KMeans.
+
+    Logic:
+        Creates a simple id-to-cluster mapping for downstream joins.
+
+    Output:
+        DataFrame with id and cluster columns.
+    """
+    return pd.DataFrame(
+        {
+            "id": row_ids,
+            "cluster": labels,
+        }
+    )
+
+
+def save_cluster_models(svd, kmeans) -> None:
+    """
+    Input:
+        Trained SVD reducer and KMeans model.
+
+    Logic:
+        Saves fitted clustering artifacts for reuse and inspection.
+
+    Output:
+        svd.joblib and kmeans.joblib in the model artifact directory.
+    """
+    ensure_dir(MODEL_DIR)
+
+    joblib.dump(svd, MODEL_DIR / "svd.joblib", compress=3)
+    joblib.dump(kmeans, MODEL_DIR / "kmeans.joblib", compress=3)
+
+
 def main() -> None:
+    """
+    Input:
+        artifacts/vectorizers/tfidf_oracle_v1/
+
+    Logic:
+        Loads TF-IDF vectors, reduces dimensionality with SVD, clusters cards
+        with KMeans, and saves both the fitted models and card cluster labels.
+
+    Output:
+        artifacts/models/svd_kmeans_tfidf_v1/
+            svd.joblib
+            kmeans.joblib
+
+        data/processed/oracle_clusters.parquet
+    """
     ensure_dir(paths.artifacts_models)
     ensure_dir(paths.data_processed)
 
-    vec_dir = paths.artifacts_vectorizers / "tfidf_oracle_v1"
-    if not vec_dir.exists():
+    if not VECTOR_DIR.exists():
         raise FileNotFoundError(
-            f"Missing {vec_dir}. Run: python -m src.pipelines.build_vectors"
+            f"Missing {VECTOR_DIR}. Run: python -m src.data_processing.build_vectors"
         )
 
-    vec, X, row_ids = load_tfidf_artifacts(vec_dir)
+    vectorizer, matrix, row_ids = load_tfidf_artifacts(VECTOR_DIR)
+    validate_vector_artifacts(matrix, row_ids)
 
     cfg = ClusterConfig(
         n_clusters=200,
@@ -29,28 +104,28 @@ def main() -> None:
         n_init=10,
     )
 
-    labels, svd, km = cluster_with_svd_kmeans(X, cfg)
+    print("Clustering config:")
+    print(f"  n_clusters={cfg.n_clusters}")
+    print(f"  n_components={cfg.n_components}")
+    print(f"  random_state={cfg.random_state}")
+    print(f"  n_init={cfg.n_init}")
 
-    # Save models
-    model_dir = paths.artifacts_models / "svd_kmeans_tfidf_v1"
-    ensure_dir(model_dir)
-    joblib.dump(svd, model_dir / "svd.joblib", compress=3)
-    joblib.dump(km, model_dir / "kmeans.joblib", compress=3)
+    labels, svd, kmeans = cluster_with_svd_kmeans(matrix, cfg)
 
-    # Save label mapping
-    out_df = pd.DataFrame(
-        {
-            "id": row_ids,
-            "cluster": labels,
-        }
-    )
-    out_path = paths.data_processed / "oracle_clusters.parquet"
-    out_df.to_parquet(out_path, index=False)
+    save_cluster_models(svd, kmeans)
 
-    print(f"Saved clustering models to: {model_dir}")
-    print(f"Saved cluster labels to: {out_path}")
-    print(f"Clusters: {cfg.n_clusters} | Rows: {len(out_df)}")
+    out_df = build_cluster_labels(row_ids, labels)
+    out_df.to_parquet(CLUSTERS_OUT, index=False)
 
+    print(f"Saved clustering models to: {MODEL_DIR}")
+    print(f"Saved cluster labels to: {CLUSTERS_OUT}")
+    print(f"Clusters: {cfg.n_clusters} | Rows: {len(out_df):,}")
 
-if __name__ == "__main__":
-    main()
+    # TODO Phase 4:
+    # Experiment with additional clustering approaches and evaluation methods:
+    #   - compare KMeans cluster counts with silhouette/inertia diagnostics
+    #   - evaluate MiniBatchKMeans for faster iteration
+    #   - test HDBSCAN or agglomerative clustering for non-spherical groups
+    #   - compare clustering on TF-IDF vs SVD-reduced vs future embeddings
+    #   - add cluster quality reports with representative cards and top terms
+    #   - version clustering outputs by config instead of fixed folder names
