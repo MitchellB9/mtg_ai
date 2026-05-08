@@ -1,10 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 
 from src.config.settings import paths
 from src.utils.io import ensure_dir
-from src.preprocessing.type_parser import parse_type_line
 from src.preprocessing.text_normalization import (
     normalize_oracle_text,
     TextNormalizationOptions,
@@ -12,80 +11,129 @@ from src.preprocessing.text_normalization import (
 from src.preprocessing.oracle_tokenizer import tokenize_oracle_text, TokenizeOptions
 
 
-def main() -> None:
-    ensure_dir(paths.data_processed)
+BASE_PARQUET_DIR = paths.data_processed.parent / "base_parquets"
 
-    in_path = paths.data_processed / "cards_core.parquet"
-    if not in_path.exists():
-        raise FileNotFoundError(
-            f"Missing {in_path}. Run: python -m src.pipelines.build_dataset"
+INPUT_PATH = BASE_PARQUET_DIR / "game_features.parquet"
+
+ORACLE_TOKENS_OUT = paths.data_processed / "oracle_tokens.parquet"
+CARDS_ENRICHED_OUT = paths.data_processed / "cards_enriched.parquet"
+
+
+def validate_input(df: pd.DataFrame) -> None:
+    """
+    Input:
+        game_features DataFrame.
+
+    Logic:
+        Confirms required columns exist before downstream text/type processing.
+
+    Output:
+        Raises ValueError if the input dataset is not usable.
+    """
+    required_cols = ["id", "oracle_id", "name", "oracle_text"]
+
+    missing = [col for col in required_cols if col not in df.columns]
+
+    if missing:
+        raise ValueError(f"game_features is missing required columns: {missing}")
+
+    duplicate_oracle_ids = df["oracle_id"].duplicated().sum()
+
+    if duplicate_oracle_ids:
+        raise ValueError(
+            f"Expected one row per oracle_id, found duplicates: {duplicate_oracle_ids}"
         )
 
-    df = pd.read_parquet(in_path)
-    print(f"Loaded: {in_path} (rows={len(df)}, cols={len(df.columns)})")
 
-    # ---- Type features ----
-    parsed = df["type_line"].apply(parse_type_line)
+def add_normalized_oracle_text(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Input:
+        game_features DataFrame with oracle_text and name.
 
-    df_types = pd.DataFrame(
-        {
-            "id": df["id"],
-            "oracle_id": df.get("oracle_id"),
-            "name": df["name"],
-            "type_line": df["type_line"],
-            "basic_types": parsed.apply(lambda p: p.basic_types),
-            "super_types": parsed.apply(lambda p: p.super_types),
-            "sub_types": parsed.apply(lambda p: p.sub_types),
-            "type_faces": parsed.apply(lambda p: p.faces),
-        }
-    )
+    Logic:
+        Normalizes oracle text for consistent tokenization and downstream NLP.
 
-    type_out = paths.data_processed / "type_features.parquet"
-    df_types.to_parquet(type_out, index=False)
-    print(f"Saved: {type_out}")
-
-    # ---- Text normalization + tokenization ----
+    Output:
+        Copy of the DataFrame with oracle_text_norm added.
+    """
     norm_opts = TextNormalizationOptions(
-        strip_reminder_text=False,  # set True later if you want
+        strip_reminder_text=False,
         replace_card_name=True,
     )
+
+    df = df.copy()
+
+    df["oracle_text_norm"] = [
+        normalize_oracle_text(text, name, norm_opts)
+        for text, name in zip(df["oracle_text"], df["name"])
+    ]
+
+    return df
+
+
+def build_oracle_tokens(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Input:
+        DataFrame with normalized oracle text.
+
+    Logic:
+        Tokenizes normalized oracle text.
+
+    Output:
+        oracle_tokens DataFrame.
+    """
     tok_opts = TokenizeOptions(
         keep_newlines=True,
         lowercase=True,
     )
 
-    # Normalize
-    df["oracle_text_norm"] = df.apply(
-        lambda r: normalize_oracle_text(r.get("oracle_text"), r.get("name"), norm_opts),
-        axis=1,
-    )
-
-    # Tokenize
-    df_tokens = pd.DataFrame(
+    return pd.DataFrame(
         {
             "id": df["id"],
-            "oracle_id": df.get("oracle_id"),
+            "oracle_id": df["oracle_id"],
             "name": df["name"],
             "oracle_text_norm": df["oracle_text_norm"],
             "oracle_tokens": df["oracle_text_norm"].apply(
-                lambda t: tokenize_oracle_text(t, tok_opts)
+                lambda text: tokenize_oracle_text(text, tok_opts)
             ),
         }
     )
 
-    tok_out = paths.data_processed / "oracle_tokens.parquet"
-    df_tokens.to_parquet(tok_out, index=False)
-    print(f"Saved: {tok_out}")
 
-    # Optional: save an enriched unified dataset for downstream pipelines
-    df_enriched = df.merge(
-        df_types[["id", "basic_types", "super_types", "sub_types"]],
-        on="id",
-        how="left",
-    )
-    enriched_out = paths.data_processed / "cards_enriched.parquet"
-    df_enriched.to_parquet(enriched_out, index=False)
-    print(f"Saved: {enriched_out}")
+def main() -> None:
+    """
+    Input:
+        data/base_parquets/game_features.parquet
+
+    Logic:
+        Adds normalized oracle text, builds oracle token data, and saves an
+        enriched card dataset for downstream vectorization and clustering.
+
+    Output:
+        data/processed/oracle_tokens.parquet
+        data/processed/cards_enriched.parquet
+    """
+    ensure_dir(paths.data_processed)
+
+    if not INPUT_PATH.exists():
+        raise FileNotFoundError(
+            f"Missing {INPUT_PATH}. Run: python -m src.data_processing.build_base_parquets"
+        )
+
+    df = pd.read_parquet(INPUT_PATH)
+    print(f"Loaded: {INPUT_PATH} (rows={len(df):,}, cols={len(df.columns):,})")
+
+    validate_input(df)
+
+    df = add_normalized_oracle_text(df)
+
+    df_tokens = build_oracle_tokens(df)
+    df_tokens.to_parquet(ORACLE_TOKENS_OUT, index=False)
+    print(f"Saved: {ORACLE_TOKENS_OUT} (rows={len(df_tokens):,})")
+
+    df_enriched = df.copy()
+    df_enriched.to_parquet(CARDS_ENRICHED_OUT, index=False)
+    print(f"Saved: {CARDS_ENRICHED_OUT} (rows={len(df_enriched):,})")
 
     print("Done.")
 
