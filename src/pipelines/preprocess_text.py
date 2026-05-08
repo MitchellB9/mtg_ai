@@ -140,3 +140,15 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+    # TODO Phase 4:
+        # Experiment with additional oracle-text preprocessing approaches:
+        #   - optional reminder-text removal modes
+        #   - mana-symbol canonicalization strategies
+        #   - sentence-level oracle segmentation
+        #   - stemming vs lemmatization evaluation
+        #   - mechanic/action extraction pipelines
+        #   - structured ability parsing
+        #   - named-entity replacement beyond card names
+        #   - multilingual preprocessing support
+        #   - evaluate preserving vs removing punctuation/newlines

@@ -89,3 +89,13 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+    # TODO Phase 4:
+        # Experiment with additional text/vector representations after the current
+        # TF-IDF pipeline is stable:
+        #   - CountVectorizer baseline
+        #   - character n-grams for oracle wording patterns
+        #   - keyword/mechanic-weighted TF-IDF
+        #   - sentence-transformer embeddings
+        #   - hybrid vectors: oracle text + type/color/mana features
+        #   - dimensionality reduction before clustering: SVD/LSA, UMAP
