@@ -62,7 +62,7 @@ def main() -> None:
     texts = df["oracle_text_norm"].fillna("")
     ids = df["id"].to_numpy()
 
-    cfg = v(
+    cfg = TfidfConfig(
         min_df=2,
         max_df=0.97,
         ngram_range=(1, 2),
