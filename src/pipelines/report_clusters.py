@@ -1,39 +1,103 @@
 from __future__ import annotations
 
-from pathlib import Path
 from collections import Counter
 import json
 
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
 
 from src.config.settings import paths
 from src.features.embedding_features import load_tfidf_artifacts
 
 
-def _safe_list(value) -> list[str]:
-    if isinstance(value, list):
-        return [str(v) for v in value if pd.notna(v)]
-    return []
+CARDS_PATH = paths.data_processed / "cards_enriched.parquet"
+CLUSTERS_PATH = paths.data_processed / "oracle_clusters.parquet"
+
+VECTORIZER_DIR = paths.artifacts_vectorizers / "tfidf_oracle_v1"
+MODEL_DIR = paths.artifacts_models / "svd_kmeans_tfidf_v1"
+
+CLUSTER_REPORT_OUT = paths.data_processed / "cluster_report.parquet"
+CLUSTER_REPRESENTATIVES_OUT = paths.data_processed / "cluster_representatives.parquet"
 
 
-def _top_items(series: pd.Series, top_n: int = 10) -> list[tuple[str, int]]:
+def validate_inputs(
+    cards: pd.DataFrame,
+    clusters: pd.DataFrame,
+    matrix,
+    row_ids,
+) -> None:
+    """
+    Input:
+        Card metadata, cluster labels, TF-IDF matrix, and vector row ids.
+
+    Logic:
+        Confirms required columns exist and vector rows align with row ids.
+
+    Output:
+        Raises ValueError if required inputs are missing or inconsistent.
+    """
+    required_card_cols = [
+        "id",
+        "name",
+        "type_line",
+        "cmc",
+        "oracle_text_norm",
+        "types",
+        "supertypes",
+        "subtypes",
+    ]
+
+    missing_cards = [col for col in required_card_cols if col not in cards.columns]
+    if missing_cards:
+        raise ValueError(f"cards_enriched is missing columns: {missing_cards}")
+
+    required_cluster_cols = ["id", "cluster"]
+    missing_clusters = [col for col in required_cluster_cols if col not in clusters.columns]
+    if missing_clusters:
+        raise ValueError(f"oracle_clusters is missing columns: {missing_clusters}")
+
+    if matrix.shape[0] != len(row_ids):
+        raise ValueError(
+            f"Vector row mismatch: matrix rows={matrix.shape[0]}, ids={len(row_ids)}"
+        )
+
+
+def top_items(series: pd.Series, top_n: int = 10) -> list[tuple[str, int]]:
+    """
+    Input:
+        Series containing list-like values.
+
+    Logic:
+        Counts repeated values across all lists in the series.
+
+    Output:
+        Top item/count pairs.
+    """
     counter = Counter()
+
     for value in series:
         if isinstance(value, list):
-            counter.update([str(v) for v in value if str(v).strip()])
+            counter.update([str(item) for item in value if str(item).strip()])
+
     return counter.most_common(top_n)
 
 
-def _representative_cards(
+def representative_cards(
     cluster_df: pd.DataFrame,
     cluster_center: np.ndarray,
     svd_matrix_cluster: np.ndarray,
     n: int = 10,
 ) -> pd.DataFrame:
     """
-    Return the most representative cards in a cluster based on distance to centroid.
+    Input:
+        Cards in one cluster, that cluster's centroid, and reduced SVD vectors.
+
+    Logic:
+        Finds cards closest to the cluster centroid in reduced vector space.
+
+    Output:
+        Representative cards with centroid_distance added.
     """
     if len(cluster_df) == 0:
         return cluster_df.head(0)
@@ -43,25 +107,35 @@ def _representative_cards(
 
     reps = cluster_df.iloc[order].copy()
     reps["centroid_distance"] = distances[order]
+
     return reps
 
 
-def _top_cluster_terms(
-    X_cluster,
+def top_cluster_terms(
+    matrix_cluster,
     feature_names: np.ndarray,
     top_n: int = 15,
 ) -> list[tuple[str, float]]:
     """
-    Mean TF-IDF weight within cluster, sorted descending.
+    Input:
+        TF-IDF rows for a cluster and vectorizer feature names.
+
+    Logic:
+        Computes the mean TF-IDF weight per term within the cluster.
+
+    Output:
+        Highest-weighted cluster terms.
     """
-    if X_cluster.shape[0] == 0:
+    if matrix_cluster.shape[0] == 0:
         return []
 
-    mean_scores = np.asarray(X_cluster.mean(axis=0)).ravel()
+    mean_scores = np.asarray(matrix_cluster.mean(axis=0)).ravel()
+
     if mean_scores.size == 0:
         return []
 
     top_idx = np.argsort(mean_scores)[::-1][:top_n]
+
     return [
         (str(feature_names[i]), float(mean_scores[i]))
         for i in top_idx
@@ -69,134 +143,193 @@ def _top_cluster_terms(
     ]
 
 
-def main() -> None:
-    processed_dir = paths.data_processed
-    vectorizer_dir = paths.artifacts_vectorizers / "tfidf_oracle_v1"
-    model_dir = paths.artifacts_models / "svd_kmeans_tfidf_v1"
+def build_cluster_input(
+    cards: pd.DataFrame,
+    clusters: pd.DataFrame,
+    row_ids,
+) -> pd.DataFrame:
+    """
+    Input:
+        cards_enriched, oracle_clusters, and TF-IDF artifact row ids.
 
-    cards_path = processed_dir / "cards_enriched.parquet"
-    types_path = processed_dir / "type_features.parquet"
-    clusters_path = processed_dir / "oracle_clusters.parquet"
+    Logic:
+        Joins card metadata to cluster labels and maps each card id back to
+        its matrix row.
 
-    if not cards_path.exists():
-        raise FileNotFoundError(f"Missing {cards_path}")
-    if not types_path.exists():
-        raise FileNotFoundError(f"Missing {types_path}")
-    if not clusters_path.exists():
-        raise FileNotFoundError(f"Missing {clusters_path}")
-    if not vectorizer_dir.exists():
-        raise FileNotFoundError(f"Missing {vectorizer_dir}")
-    if not model_dir.exists():
-        raise FileNotFoundError(f"Missing {model_dir}")
-
-    # Load processed data
-    cards = pd.read_parquet(cards_path)
-    types = pd.read_parquet(types_path)
-    clusters = pd.read_parquet(clusters_path)
-
-    # Merge card metadata
-    df = (
-        cards.merge(
-            types[["id", "basic_types", "super_types", "sub_types"]],
-            on="id",
-            how="left",
-            suffixes=("", "_type_features")
-        )
-        .merge(clusters, on="id", how="left")
+    Output:
+        Cluster analysis DataFrame sorted by matrix_row.
+    """
+    row_map = pd.DataFrame(
+        {
+            "matrix_row": np.arange(len(row_ids)),
+            "id": row_ids,
+        }
     )
 
-    # Load vector artifacts
-    vectorizer, X, row_ids = load_tfidf_artifacts(vectorizer_dir)
-    svd = joblib.load(model_dir / "svd.joblib")
+    df = cards.merge(clusters, on="id", how="left")
+    df = df.merge(row_map, on="id", how="inner")
 
-    # Row alignment from TF-IDF matrix back to cards
-    row_map = pd.DataFrame({
-        "matrix_row": np.arange(len(row_ids)),
-        "id": row_ids,
-    })
+    return df.sort_values("matrix_row").reset_index(drop=True)
 
-    df = df.merge(row_map, on="id", how="inner").sort_values("matrix_row").reset_index(drop=True)
 
-    if len(df) != X.shape[0]:
-        raise ValueError(
-            f"Row alignment mismatch: merged df has {len(df)} rows but TF-IDF matrix has {X.shape[0]} rows."
-        )
+def build_cluster_reports(
+    df: pd.DataFrame,
+    matrix,
+    reduced_matrix: np.ndarray,
+    feature_names: np.ndarray,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Input:
+        Cluster analysis DataFrame, TF-IDF matrix, reduced matrix, and terms.
 
-    feature_names = np.array(vectorizer.get_feature_names_out())
-    X_reduced = svd.transform(X)
+    Logic:
+        Builds one summary row per cluster and one representative-card table.
 
+    Output:
+        cluster_report DataFrame and cluster_representatives DataFrame.
+    """
     cluster_reports: list[dict] = []
     representative_rows: list[dict] = []
 
     for cluster_id in sorted(df["cluster"].dropna().unique()):
         cluster_id = int(cluster_id)
+
         cluster_df = df[df["cluster"] == cluster_id].copy()
         cluster_rows = cluster_df["matrix_row"].to_numpy()
 
-        X_cluster = X[cluster_rows]
-        X_reduced_cluster = X_reduced[cluster_rows]
+        matrix_cluster = matrix[cluster_rows]
+        reduced_cluster = reduced_matrix[cluster_rows]
+        cluster_center = reduced_cluster.mean(axis=0)
 
-        cluster_center = X_reduced_cluster.mean(axis=0)
+        top_types = top_items(cluster_df["types"], top_n=8)
+        top_supertypes = top_items(cluster_df["supertypes"], top_n=8)
+        top_subtypes = top_items(cluster_df["subtypes"], top_n=12)
+        top_terms = top_cluster_terms(matrix_cluster, feature_names, top_n=15)
 
-        basic_top = _top_items(cluster_df["basic_types"], top_n=8)
-        super_top = _top_items(cluster_df["super_types"], top_n=8)
-        sub_top = _top_items(cluster_df["sub_types"], top_n=12)
-        term_top = _top_cluster_terms(X_cluster, feature_names, top_n=15)
-
-        reps = _representative_cards(
+        reps = representative_cards(
             cluster_df=cluster_df,
             cluster_center=cluster_center,
-            svd_matrix_cluster=X_reduced_cluster,
+            svd_matrix_cluster=reduced_cluster,
             n=10,
         )
 
-        rep_cards = reps[["name", "type_line", "cmc", "oracle_text_norm", "centroid_distance"]].to_dict("records")
+        rep_cards = reps[
+            [
+                "name",
+                "type_line",
+                "cmc",
+                "oracle_text_norm",
+                "centroid_distance",
+            ]
+        ].to_dict("records")
 
-        cluster_reports.append({
-            "cluster": cluster_id,
-            "cluster_size": int(len(cluster_df)),
-            "avg_cmc": float(cluster_df["cmc"].dropna().mean()) if cluster_df["cmc"].notna().any() else None,
-            "median_cmc": float(cluster_df["cmc"].dropna().median()) if cluster_df["cmc"].notna().any() else None,
-            "top_basic_types": json.dumps(basic_top),
-            "top_super_types": json.dumps(super_top),
-            "top_sub_types": json.dumps(sub_top),
-            "top_terms": json.dumps(term_top),
-            "representative_cards": json.dumps(rep_cards),
-        })
+        cluster_reports.append(
+            {
+                "cluster": cluster_id,
+                "cluster_size": int(len(cluster_df)),
+                "avg_cmc": (
+                    float(cluster_df["cmc"].dropna().mean())
+                    if cluster_df["cmc"].notna().any()
+                    else None
+                ),
+                "median_cmc": (
+                    float(cluster_df["cmc"].dropna().median())
+                    if cluster_df["cmc"].notna().any()
+                    else None
+                ),
+                "top_types": json.dumps(top_types),
+                "top_supertypes": json.dumps(top_supertypes),
+                "top_subtypes": json.dumps(top_subtypes),
+                "top_terms": json.dumps(top_terms),
+                "representative_cards": json.dumps(rep_cards),
+            }
+        )
 
         for rank, (_, row) in enumerate(reps.iterrows(), start=1):
-            representative_rows.append({
-                "cluster": cluster_id,
-                "representative_rank": rank,
-                "id": row["id"],
-                "name": row["name"],
-                "type_line": row.get("type_line"),
-                "cmc": row.get("cmc"),
-                "oracle_text_norm": row.get("oracle_text_norm"),
-                "centroid_distance": row.get("centroid_distance"),
-            })
+            representative_rows.append(
+                {
+                    "cluster": cluster_id,
+                    "representative_rank": rank,
+                    "id": row["id"],
+                    "name": row["name"],
+                    "type_line": row.get("type_line"),
+                    "cmc": row.get("cmc"),
+                    "oracle_text_norm": row.get("oracle_text_norm"),
+                    "centroid_distance": row.get("centroid_distance"),
+                }
+            )
 
     report_df = pd.DataFrame(cluster_reports).sort_values(
-        ["cluster_size", "cluster"], ascending=[False, True]
+        ["cluster_size", "cluster"],
+        ascending=[False, True],
     ).reset_index(drop=True)
 
     representatives_df = pd.DataFrame(representative_rows).sort_values(
-        ["cluster", "representative_rank"]
+        ["cluster", "representative_rank"],
     ).reset_index(drop=True)
 
-    report_out = processed_dir / "cluster_report.parquet"
-    reps_out = processed_dir / "cluster_representatives.parquet"
+    return report_df, representatives_df
 
-    report_df.to_parquet(report_out, index=False)
-    representatives_df.to_parquet(reps_out, index=False)
 
-    print(f"Saved: {report_out}")
-    print(f"Saved: {reps_out}")
+def main() -> None:
+    """
+    Input:
+        data/processed/cards_enriched.parquet
+        data/processed/oracle_clusters.parquet
+        artifacts/vectorizers/tfidf_oracle_v1/
+        artifacts/models/svd_kmeans_tfidf_v1/
 
-    # TODO: Don't like this output here. Save for notebook
-    print("\nTop 10 clusters by size:\n")
-    print(report_df[["cluster", "cluster_size", "avg_cmc", "top_basic_types", "top_terms"]].head(10).to_string(index=False))
+    Logic:
+        Joins card metadata to cluster labels, aligns rows to the vector matrix,
+        computes top terms/types per cluster, and identifies representative cards.
+
+    Output:
+        data/processed/cluster_report.parquet
+        data/processed/cluster_representatives.parquet
+    """
+    for path in [CARDS_PATH, CLUSTERS_PATH, VECTORIZER_DIR, MODEL_DIR]:
+        if not path.exists():
+            raise FileNotFoundError(f"Missing required input: {path}")
+
+    cards = pd.read_parquet(CARDS_PATH)
+    clusters = pd.read_parquet(CLUSTERS_PATH)
+
+    vectorizer, matrix, row_ids = load_tfidf_artifacts(VECTORIZER_DIR)
+    svd = joblib.load(MODEL_DIR / "svd.joblib")
+
+    validate_inputs(cards, clusters, matrix, row_ids)
+
+    df = build_cluster_input(cards, clusters, row_ids)
+
+    if len(df) != matrix.shape[0]:
+        raise ValueError(
+            f"Row alignment mismatch: df rows={len(df)}, matrix rows={matrix.shape[0]}"
+        )
+
+    feature_names = np.array(vectorizer.get_feature_names_out())
+    reduced_matrix = svd.transform(matrix)
+
+    report_df, representatives_df = build_cluster_reports(
+        df=df,
+        matrix=matrix,
+        reduced_matrix=reduced_matrix,
+        feature_names=feature_names,
+    )
+
+    report_df.to_parquet(CLUSTER_REPORT_OUT, index=False)
+    representatives_df.to_parquet(CLUSTER_REPRESENTATIVES_OUT, index=False)
+
+    print(f"Saved: {CLUSTER_REPORT_OUT} (rows={len(report_df):,})")
+    print(f"Saved: {CLUSTER_REPRESENTATIVES_OUT} (rows={len(representatives_df):,})")
 
 
 if __name__ == "__main__":
     main()
+
+    # TODO Phase 4:
+    # Explore alternative cluster interpretation methods:
+    #   - compare centroid-nearest representatives with medoids
+    #   - generate LLM-assisted cluster names/summaries from representative cards
+    #   - produce human-review cluster dashboards
+    #   - compare cluster themes against rule labels and mechanic extraction
+    #   - create graph-based summaries of cluster relationships

@@ -626,11 +626,11 @@ if __name__ == "__main__":
     main()
 
     # TODO Phase 4:
-        # Explore additional raw/base dataset structures and normalization:
-        #   - split non_main_game_pieces into tokens/emblems/planes/schemes/etc.
-        #   - normalize nested URI/image/legality structures into relational tables
-        #   - add incremental parquet update pipeline instead of full rebuilds
-        #   - create dedicated legality-by-format dataset
-        #   - investigate memory-efficient chunked processing for very large bulk files
-        #   - evaluate DuckDB/Polars for large-scale preprocessing performance
-        #   - add schema/version metadata tracking for parquet outputs
+    # Explore additional raw/base dataset structures and normalization:
+    #   - split non_main_game_pieces into tokens/emblems/planes/schemes/etc.
+    #   - normalize nested URI/image/legality structures into relational tables
+    #   - add incremental parquet update pipeline instead of full rebuilds
+    #   - create dedicated legality-by-format dataset
+    #   - investigate memory-efficient chunked processing for very large bulk files
+    #   - evaluate DuckDB/Polars for large-scale preprocessing performance
+    #   - add schema/version metadata tracking for parquet outputs

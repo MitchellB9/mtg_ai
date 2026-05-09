@@ -122,10 +122,12 @@ def main() -> None:
     print(f"Clusters: {cfg.n_clusters} | Rows: {len(out_df):,}")
 
     # TODO Phase 4:
-    # Experiment with additional clustering approaches and evaluation methods:
-    #   - compare KMeans cluster counts with silhouette/inertia diagnostics
-    #   - evaluate MiniBatchKMeans for faster iteration
-    #   - test HDBSCAN or agglomerative clustering for non-spherical groups
-    #   - compare clustering on TF-IDF vs SVD-reduced vs future embeddings
-    #   - add cluster quality reports with representative cards and top terms
-    #   - version clustering outputs by config instead of fixed folder names
+    # Experiment with clustering methods beyond fixed-k KMeans:
+    #   - HDBSCAN for density-based clustering that can discover cluster count
+    #   - DBSCAN/OPTICS for density-based grouping and noise detection
+    #   - agglomerative clustering for hierarchical card relationships
+    #   - spectral clustering for graph-like similarity structures
+    #   - community detection on card similarity graphs
+    #   - topic modeling approaches such as NMF or LDA as cluster alternatives
+    #   - compare discovered clusters against rule labels and human inspection
+    #   - create cluster quality reports with representative cards and top terms
