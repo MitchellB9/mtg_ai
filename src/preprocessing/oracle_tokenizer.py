@@ -34,6 +34,7 @@ class TokenizeOptions:
     """
     Configuration controlling oracle-text tokenization behavior.
     """
+
     keep_newlines: bool = True
     lowercase: bool = True
 
@@ -61,6 +62,7 @@ def collapse_multiword_phrases(text: str) -> str:
         )
 
     return output
+
 
 def tokenize_line(line: str, opts: TokenizeOptions) -> list[str]:
     """
@@ -93,7 +95,9 @@ def tokenize_line(line: str, opts: TokenizeOptions) -> list[str]:
 
     for token in rough_tokens:
         if token == "mana_symbol":
-            symbol = mana_symbols[mana_index] if mana_index < len(mana_symbols) else "{?}"
+            symbol = (
+                mana_symbols[mana_index] if mana_index < len(mana_symbols) else "{?}"
+            )
             tokens.append(f"MANA:{symbol.upper()}")
             mana_index += 1
             continue
@@ -109,6 +113,7 @@ def tokenize_line(line: str, opts: TokenizeOptions) -> list[str]:
         tokens.append(token)
 
     return tokens
+
 
 def tokenize_oracle_text(
     normalized_text: Optional[str],
@@ -151,6 +156,7 @@ def tokenize_oracle_text(
         tokens.pop()
 
     return tokens
+
 
 # TODO Phase 4:
 # Experiment with alternative tokenization strategies:

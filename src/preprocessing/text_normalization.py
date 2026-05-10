@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 # Parenthetical reminder text
-REMINDER_RE = re.compile(r"\([^)]*\)") 
+REMINDER_RE = re.compile(r"\([^)]*\)")
 
 # Horizontal whitespace normalization
-WS_RE = re.compile(r"[ \t]+") 
+WS_RE = re.compile(r"[ \t]+")
 
 # Collapse excessive blank lines while preserving ability separation
 MULTILINE_BLANKS_RE = re.compile(r"\n{3,}")
@@ -18,6 +18,7 @@ MULTILINE_BLANKS_RE = re.compile(r"\n{3,}")
 class TextNormalizationOptions:
     strip_reminder_text: bool = False
     replace_card_name: bool = True
+
 
 # TODO:
 # Explore entity-aware oracle-text parsing instead of simple name replacement.
@@ -49,6 +50,7 @@ def safe_card_name_pattern(card_name: str) -> re.Pattern:
     # match on word boundaries where possible (names can include commas/apostrophes)
     return re.compile(rf"(?<!\w){escaped}(?!\w)")
 
+
 def normalize_line_whitespace(text: str) -> str:
     """
     Input:
@@ -66,6 +68,7 @@ def normalize_line_whitespace(text: str) -> str:
 
     return "\n".join(lines)
 
+
 def normalize_blank_lines(text: str) -> str:
     """
     Input:
@@ -79,6 +82,7 @@ def normalize_blank_lines(text: str) -> str:
         Text with normalized blank-line spacing.
     """
     return MULTILINE_BLANKS_RE.sub("\n\n", text)
+
 
 def replace_card_name_references(
     text: str,
@@ -100,6 +104,7 @@ def replace_card_name_references(
     pattern = safe_card_name_pattern(card_name)
 
     return pattern.sub("this card", text)
+
 
 def normalize_oracle_text(
     oracle_text: Optional[str],
@@ -141,6 +146,7 @@ def normalize_oracle_text(
     text = normalize_blank_lines(text)
 
     return text.strip()
+
 
 # TODO Phase 4:
 # Experiment with alternative normalization strategies:
