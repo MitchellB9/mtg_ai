@@ -199,5 +199,60 @@ LABEL_TAXONOMY: dict[str, LabelDefinition] = {
 }
 
 
+def validate_taxonomy() -> None:
+    """
+    Input:
+        LABEL_TAXONOMY.
+
+    Logic:
+        Confirms dictionary keys match their LabelDefinition labels.
+
+    Output:
+        Raises ValueError if taxonomy entries are inconsistent.
+    """
+    mismatches = [
+        key for key, definition in LABEL_TAXONOMY.items() if key != definition.label
+    ]
+
+    if mismatches:
+        raise ValueError(f"Taxonomy key/label mismatches: {mismatches}")
+
+
+def get_label_definition(label: str) -> LabelDefinition | None:
+    """
+    Input:
+        Label name.
+
+    Logic:
+        Looks up a label definition if the label exists.
+
+    Output:
+        LabelDefinition or None.
+    """
+    return LABEL_TAXONOMY.get(label)
+
+
 def get_label_names() -> list[str]:
+    """
+    Input:
+        LABEL_TAXONOMY.
+
+    Logic:
+        Returns all known label names in stable sorted order.
+
+    Output:
+        Sorted label-name list.
+    """
     return sorted(LABEL_TAXONOMY.keys())
+
+
+validate_taxonomy()
+
+
+# TODO Phase 4:
+# Experiment with richer label taxonomy designs:
+#   - split broad card_role labels into mechanics, functions, and archetype roles
+#   - support hierarchical labels such as removal > exile_removal > creature_removal
+#   - add label metadata for expected false positives and rule confidence
+#   - map labels to deck archetypes and synergy graph concepts
+#   - compare hand-built taxonomy against labels discovered from clustering
